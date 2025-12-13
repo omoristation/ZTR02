@@ -1,0 +1,116 @@
+{
+  "info": {
+    "_postman_id": "l13-ultimate",
+    "name": "Speed Wi-Fi HOME 5G L13 信号监控",
+    "description": "需要设置环境变量encrypted_pwd和ld都为空，密码写在集合变量\n使用方法：只需改下面 Variables 里的 password 和 router_ip 即可",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  
+  "item": [
+    {
+      "name": "Step 1 → 获取盐并计算正确密码（必点）",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const json = pm.response.json();",
+              "const ld = json.LD;",
+              "pm.environment.set('ld', ld);",
+              "",
+              "const pwd = pm.collectionVariables.get('password');",
+              "",
+              "const step1 = CryptoJS.SHA256(CryptoJS.enc.Utf8.parse(pwd)).toString(CryptoJS.enc.Hex).toUpperCase();",
+              "const final = CryptoJS.SHA256(CryptoJS.enc.Utf8.parse(step1 + ld)).toString(CryptoJS.enc.Hex).toUpperCase();",
+              "",
+              "pm.environment.set('encrypted_pwd', final);",
+              "",
+              "console.log('');",
+              "console.log('L13 信号监控就绪');",
+              "console.log('密码明文 : ' + pwd);",
+              "console.log('动态盐 LD : ' + ld);",
+              "console.log('加密密码 : ' + final);",
+              "console.log('点 Step 2 登录 → 然后狂点 Step 3 刷信号');"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Referer", "value": "http://{{router_ip}}/index.html"}],
+        "url": "http://{{router_ip}}/goform/goform_get_cmd_process?cmd=LD&multi_data=1&_={{$timestamp}}"
+      }
+    },
+    {
+      "name": "Step 2 → 登录",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.json().result === '0') {",
+              "    console.log('登录成功！');",
+              "} else {",
+              "    console.log('登录失败：', pm.response.json());",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {"key": "Referer", "value": "http://{{router_ip}}/index.html"},
+          {"key": "Origin", "value": "http://{{router_ip}}"}
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {"key": "isTest", "value": "false"},
+            {"key": "goformId", "value": "LOGIN"},
+            {"key": "password", "value": "{{encrypted_pwd}}"}
+          ]
+        },
+        "url": "http://{{router_ip}}/goform/goform_set_cmd_process"
+      }
+    },
+    {
+      "name": "Step 3 → 实时信号（狂点此项！）",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const d = pm.response.json();",
+              "const t = new Date().toTimeString().slice(0,8);",
+              "console.log('');",
+              "console.log(`时间 ${t} | 模式 ${d.network_type||'-'} | ${d.signalbar}格`);",
+              "console.log(`4G RSRP ${d.lte_rsrp||'-'} dBm | RSSI ${d.lte_rssi||'-'} dBm`);",
+              "console.log(`5G RSRP ${d.Z5g_rsrp||'-'} dBm | SINR ${d.Z5g_SINR||'-'} dB`);",
+              "console.log(`频段 ${d.wan_active_band||'-'}`);",
+              "console.log('─'.repeat(55));"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [{"key": "Referer", "value": "http://{{router_ip}}/index.html"}],
+        "url": "http://{{router_ip}}/goform/goform_get_cmd_process?cmd=lte_rssi,lte_rsrp,Z5g_rsrp,Z5g_SINR,signalbar,network_type,wan_active_band,lte_ca_pcell_band,lte_ca_scell_band&multi_data=1&_={{$timestamp}}"
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "router_ip",
+      "value": "192.168.10.1",
+      "description": "路由器IP"
+    },
+    {
+      "key": "password",
+      "value": "明文密码",
+      "description": "明文密码，改这里就行！"
+    }
+  ]
+}
