@@ -70,11 +70,17 @@ if __name__ == "__main__":
         exit(1)
 
     print("开始监控，按 Ctrl+C 退出\n")
+    empty_5g_count = 0  # 连续 5G RSRP 为空的次数
     try:
         while True:
             data = get_signal()
-            if not data:
+            if not data.get('Z5g_rsrp','?'):
                 print("获取数据失败，网络异常或已掉线")
+                empty_5g_count += 1
+                if empty_5g_count >= 5:
+                    print(f"\n连续 {empty_5g_count} 次未检测到 Z5g_rsrp 信号，自动退出脚本。")
+                    print("建议：重新运行脚本即可重新登录并继续监控。")
+                    break
                 time.sleep(3)
                 continue
 
