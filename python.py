@@ -8,11 +8,17 @@ Speed Wi-Fi HOME 5G L13 实时信号监控工具
 import requests
 import hashlib
 import time
+import sys
 from datetime import datetime
 
 # ================== 请在这里修改 ==================
 ROUTER_IP = "192.168.10.1"          # 大多数是这个，少数是 192.168.0.1
 PASSWORD  = "明文密码"         # 直接写明文密码
+# 如果从 shell 传了参数
+if len(sys.argv) > 1:
+    ROUTER_IP = sys.argv[1]
+if len(sys.argv) > 2:
+    PASSWORD = sys.argv[2]
 # ================================================
 
 session = requests.Session()
